@@ -67,11 +67,11 @@ jobs:
 
       - name: Install lowest dependencies
         if: matrix.dependencies == 'lowest'
-        run: composer update --prefer-lowest --prefer-dist --no-interaction --no-progress
+        run: composer update --prefer-lowest --prefer-dist --no-security-blocking --no-interaction --no-progress
 
       - name: Install highest dependencies
         if: matrix.dependencies == 'highest'
-        run: composer update --prefer-dist --no-interaction --no-progress
+        run: composer update --prefer-dist --no-security-blocking --no-interaction --no-progress
 
       - name: Run tests
         run: vendor/bin/phpunit
@@ -123,11 +123,14 @@ jobs:
           php-version: '8.4'
           coverage: none
 
-      - name: Download canonical OpenAPI contract
-        run: >-
-          curl --fail --silent --show-error --location
-          https://raw.githubusercontent.com/karlos1998/modern-simply-connect-api/main/contracts/openapi/v1/openapi.json
-          --output /tmp/simply-connect-openapi.json
+      - name: Checkout canonical OpenAPI contract
+        uses: actions/checkout@v5
+        with:
+          repository: karlos1998/modern-simply-connect-api
+          ssh-key: ${{ secrets.API_CONTRACT_DEPLOY_KEY }}
+          path: api-contract
+          sparse-checkout: contracts/openapi/v1/openapi.json
+          sparse-checkout-cone-mode: false
 
       - name: Verify required operations
-        run: php scripts/verify-openapi.php /tmp/simply-connect-openapi.json
+        run: php scripts/verify-openapi.php api-contract/contracts/openapi/v1/openapi.json
