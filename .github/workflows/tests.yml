@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -82,7 +82,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -115,7 +115,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -124,7 +124,7 @@ jobs:
           coverage: none
 
       - name: Checkout canonical OpenAPI contract
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: karlos1998/modern-simply-connect-api
           ssh-key: ${{ secrets.API_CONTRACT_DEPLOY_KEY }}
