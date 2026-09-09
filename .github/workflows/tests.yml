@@ -1,0 +1,133 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: PHP ${{ matrix.php }} · Laravel ${{ matrix.laravel }} · ${{ matrix.dependencies }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            laravel: '11'
+            framework: '^11.0'
+            testbench: '^9.0'
+            dependencies: lowest
+          - php: '8.4'
+            laravel: '11'
+            framework: '^11.0'
+            testbench: '^9.0'
+            dependencies: highest
+          - php: '8.3'
+            laravel: '12'
+            framework: '^12.0'
+            testbench: '^10.0'
+            dependencies: lowest
+          - php: '8.4'
+            laravel: '12'
+            framework: '^12.0'
+            testbench: '^10.0'
+            dependencies: highest
+          - php: '8.3'
+            laravel: '13'
+            framework: '^13.0'
+            testbench: '^11.0'
+            dependencies: lowest
+          - php: '8.4'
+            laravel: '13'
+            framework: '^13.0'
+            testbench: '^11.0'
+            dependencies: highest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Select Laravel version
+        run: >-
+          composer require
+          "laravel/framework:${{ matrix.framework }}"
+          "orchestra/testbench:${{ matrix.testbench }}"
+          --dev --no-interaction --no-update
+
+      - name: Install lowest dependencies
+        if: matrix.dependencies == 'lowest'
+        run: composer update --prefer-lowest --prefer-dist --no-interaction --no-progress
+
+      - name: Install highest dependencies
+        if: matrix.dependencies == 'highest'
+        run: composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Run tests
+        run: vendor/bin/phpunit
+
+  quality:
+    name: Code quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction --no-progress
+
+      - name: Validate Composer metadata
+        run: composer validate --strict
+
+      - name: Check formatting
+        run: vendor/bin/pint --test
+
+      - name: Check Markdown
+        run: npx --yes markdownlint-cli2@0.23.2 README.md README.pl.md CONTRIBUTING.md SECURITY.md CHANGELOG.md
+
+      - name: Run static analysis
+        run: vendor/bin/phpstan analyse --memory-limit=1G
+
+      - name: Audit dependencies
+        run: composer audit
+
+  contract:
+    name: External API contract
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Download canonical OpenAPI contract
+        run: >-
+          curl --fail --silent --show-error --location
+          https://raw.githubusercontent.com/karlos1998/modern-simply-connect-api/main/contracts/openapi/v1/openapi.json
+          --output /tmp/simply-connect-openapi.json
+
+      - name: Verify required operations
+        run: php scripts/verify-openapi.php /tmp/simply-connect-openapi.json
