@@ -1,4 +1,8 @@
-# Simply Connect dla Laravel
+<p align="center">
+  <img src="docs/simply-connect-mark.svg" width="112" alt="Simply Connect">
+</p>
+
+<h1 align="center">Simply Connect dla Laravel</h1>
 
 [![Testy](https://github.com/karlos1998/simply-connect-laravel/actions/workflows/tests.yml/badge.svg)](https://github.com/karlos1998/simply-connect-laravel/actions/workflows/tests.yml)
 [![Najnowsza wersja](https://img.shields.io/packagist/v/simply-connect/laravel.svg)](https://packagist.org/packages/simply-connect/laravel)
