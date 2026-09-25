@@ -7,6 +7,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- Laravel 10 support, including dedicated lowest- and highest-dependency CI jobs.
+- Explicit Guzzle dependency required by Laravel's HTTP client on Laravel 10.
+
 ## [0.1.0] - 2026-09-09
 
 ### Added

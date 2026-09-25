@@ -40,7 +40,7 @@ $receipt = SimplyConnect::sms()
 | Pakiet | Obsługiwane wersje |
 | --- | --- |
 | PHP | 8.2, 8.3, 8.4+ |
-| Laravel | 11, 12, 13 |
+| Laravel | 10, 11, 12, 13 |
 
 Klucz API Simply Connect potrzebuje uprawnienia `SMS_SEND`. Do odczytu statusu doręczenia dodaj `MESSAGES_READ`.
 

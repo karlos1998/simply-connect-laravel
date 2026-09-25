@@ -17,6 +17,16 @@ jobs:
       matrix:
         include:
           - php: '8.2'
+            laravel: '10'
+            framework: '^10.0'
+            testbench: '^8.31'
+            dependencies: lowest
+          - php: '8.3'
+            laravel: '10'
+            framework: '^10.0'
+            testbench: '^8.31'
+            dependencies: highest
+          - php: '8.2'
             laravel: '11'
             framework: '^11.0'
             testbench: '^9.0'
