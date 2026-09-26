@@ -6,7 +6,11 @@ use Illuminate\Config\Repository;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Http\Client\Factory;
 use SimplyConnect\Laravel\Contracts\SimplyConnectClient;
+use SimplyConnect\Laravel\Data\CallQueueItem;
+use SimplyConnect\Laravel\Data\CallQueuePage;
 use SimplyConnect\Laravel\Data\MessageDetails;
+use SimplyConnect\Laravel\Data\MessagePage;
+use SimplyConnect\Laravel\Data\OutgoingCall;
 use SimplyConnect\Laravel\Data\OutgoingSms;
 use SimplyConnect\Laravel\Data\SmsReceipt;
 use SimplyConnect\Laravel\Exceptions\ConfigurationException;
@@ -49,6 +53,31 @@ final class SimplyConnectManager implements SimplyConnectClient
         return $this->connection()->message($messageId);
     }
 
+    public function messages(array $filters = []): MessagePage
+    {
+        return $this->connection()->messages($filters);
+    }
+
+    public function callQueueEndpoints(): array
+    {
+        return $this->connection()->callQueueEndpoints();
+    }
+
+    public function publishedCallFlows(): array
+    {
+        return $this->connection()->publishedCallFlows();
+    }
+
+    public function callQueue(array $filters = []): CallQueuePage
+    {
+        return $this->connection()->callQueue($filters);
+    }
+
+    public function queueCall(OutgoingCall $call): CallQueueItem
+    {
+        return $this->connection()->queueCall($call);
+    }
+
     public function fake(?string $connection = null): FakeSimplyConnectClient
     {
         $name = $connection ?? $this->defaultConnectionName();
@@ -66,6 +95,16 @@ final class SimplyConnectManager implements SimplyConnectClient
     public function assertSmsSentCount(int $count): void
     {
         $this->fakeConnection()->assertSmsSentCount($count);
+    }
+
+    public function assertCallQueuedTo(string $destination, ?callable $callback = null): void
+    {
+        $this->fakeConnection()->assertCallQueuedTo($destination, $callback);
+    }
+
+    public function assertCallQueuedCount(int $count): void
+    {
+        $this->fakeConnection()->assertCallQueuedCount($count);
     }
 
     public function assertNothingSent(): void

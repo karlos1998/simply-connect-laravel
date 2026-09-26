@@ -19,11 +19,22 @@ if (! is_array($document)) {
 
 $requirements = [
     ['paths', '/api/v1/external/messages', 'post', 'responses', '202'],
+    ['paths', '/api/v1/external/messages', 'get', 'responses', '200'],
     ['paths', '/api/v1/external/messages/{messageId}', 'get'],
     ['paths', '/api/v1/external/endpoints', 'get'],
+    ['paths', '/api/v1/external/call-queue', 'get', 'responses', '200'],
+    ['paths', '/api/v1/external/call-queue', 'post', 'responses', '202'],
+    ['paths', '/api/v1/external/call-queue/endpoints', 'get'],
+    ['paths', '/api/v1/external/call-queue/flows', 'get'],
     ['components', 'schemas', 'ExternalSmsRequest'],
     ['components', 'schemas', 'SmsSendResult'],
+    ['components', 'schemas', 'ExternalMessagePage'],
     ['components', 'schemas', 'ExternalMessageDetails'],
+    ['components', 'schemas', 'ExternalCallQueueEndpoint'],
+    ['components', 'schemas', 'ExternalPublishedCallFlow'],
+    ['components', 'schemas', 'ExternalCallQueuePage'],
+    ['components', 'schemas', 'ExternalCallQueueRequest'],
+    ['components', 'schemas', 'ExternalCallQueueItem'],
 ];
 
 $missing = [];

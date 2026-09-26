@@ -3,6 +3,7 @@
 namespace SimplyConnect\Laravel\Tests;
 
 use SimplyConnect\Laravel\Contracts\HasSmsNumber;
+use SimplyConnect\Laravel\Data\OutgoingCall;
 use SimplyConnect\Laravel\Data\OutgoingSms;
 use SimplyConnect\Laravel\Facades\SimplyConnect;
 
@@ -51,5 +52,24 @@ final class FakeTest extends TestCase
         self::assertSame($first->idempotencyKey, $second->idempotencyKey);
         self::assertSame($first->idempotencyKey, $fake->sent()[0]->idempotencyKey);
         self::assertSame($fake->sent()[0]->idempotencyKey, $fake->sent()[1]->idempotencyKey);
+    }
+
+    public function test_it_records_outgoing_calls_without_network_requests(): void
+    {
+        SimplyConnect::fake();
+
+        $created = SimplyConnect::queueCall(new OutgoingCall(
+            endpointId: 'endpoint-id',
+            flowVersionId: 'flow-version-id',
+            destination: '+48500100200',
+            requestId: 'order-1842-call',
+        ));
+
+        SimplyConnect::assertCallQueuedCount(1);
+        SimplyConnect::assertCallQueuedTo(
+            '+48500100200',
+            fn (OutgoingCall $call): bool => $call->requestId === 'order-1842-call',
+        );
+        self::assertSame('QUEUED', $created->status);
     }
 }

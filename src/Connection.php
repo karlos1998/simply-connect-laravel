@@ -8,8 +8,14 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Str;
 use SimplyConnect\Laravel\Contracts\SimplyConnectClient;
+use SimplyConnect\Laravel\Data\CallQueueEndpoint;
+use SimplyConnect\Laravel\Data\CallQueueItem;
+use SimplyConnect\Laravel\Data\CallQueuePage;
 use SimplyConnect\Laravel\Data\MessageDetails;
+use SimplyConnect\Laravel\Data\MessagePage;
+use SimplyConnect\Laravel\Data\OutgoingCall;
 use SimplyConnect\Laravel\Data\OutgoingSms;
+use SimplyConnect\Laravel\Data\PublishedCallFlow;
 use SimplyConnect\Laravel\Data\SmsEndpoint;
 use SimplyConnect\Laravel\Data\SmsReceipt;
 use SimplyConnect\Laravel\Exceptions\AuthenticationException;
@@ -95,10 +101,75 @@ final class Connection implements SimplyConnectClient
         return MessageDetails::fromArray($data);
     }
 
-    private function get(string $path): Response
+    public function messages(array $filters = []): MessagePage
+    {
+        $response = $this->get('/api/v1/external/messages', $filters);
+        $data = $response->json();
+
+        if (! is_array($data)) {
+            throw new ServerException('Simply Connect returned an invalid message page.', $response->status());
+        }
+
+        return MessagePage::fromArray($data);
+    }
+
+    public function callQueueEndpoints(): array
+    {
+        return $this->hydrateList(
+            $this->get('/api/v1/external/call-queue/endpoints'),
+            static fn (array $item): CallQueueEndpoint => CallQueueEndpoint::fromArray($item),
+            'call queue endpoint',
+        );
+    }
+
+    public function publishedCallFlows(): array
+    {
+        return $this->hydrateList(
+            $this->get('/api/v1/external/call-queue/flows'),
+            static fn (array $item): PublishedCallFlow => PublishedCallFlow::fromArray($item),
+            'published call flow',
+        );
+    }
+
+    public function callQueue(array $filters = []): CallQueuePage
+    {
+        $response = $this->get('/api/v1/external/call-queue', $filters);
+        $data = $response->json();
+
+        if (! is_array($data)) {
+            throw new ServerException('Simply Connect returned an invalid call queue page.', $response->status());
+        }
+
+        return CallQueuePage::fromArray($data);
+    }
+
+    public function queueCall(OutgoingCall $call): CallQueueItem
     {
         try {
-            $response = $this->request()->get($path);
+            $response = $this->request()->post('/api/v1/external/call-queue', $call->toArray());
+        } catch (ConnectionException $exception) {
+            throw new UnknownOutcomeException(
+                'The call queue request lost its response. Inspect the queue before retrying with the same request ID.',
+                $call->requestId,
+                $exception,
+            );
+        }
+
+        $this->throwForResponse($response);
+        $data = $response->json();
+
+        if (! is_array($data)) {
+            throw new ServerException('Simply Connect returned an invalid call queue response.', $response->status());
+        }
+
+        return CallQueueItem::fromArray($data);
+    }
+
+    /** @param array<string, scalar|null> $query */
+    private function get(string $path, array $query = []): Response
+    {
+        try {
+            $response = $this->request()->get($path, array_filter($query, static fn (mixed $value): bool => $value !== null && $value !== ''));
         } catch (ConnectionException $exception) {
             throw new SimplyConnectException('Could not connect to Simply Connect.', previous: $exception);
         }
@@ -106,6 +177,29 @@ final class Connection implements SimplyConnectClient
         $this->throwForResponse($response);
 
         return $response;
+    }
+
+    /**
+     * @template T
+     *
+     * @param  callable(array<string, mixed>): T  $hydrate
+     * @return list<T>
+     */
+    private function hydrateList(Response $response, callable $hydrate, string $itemName): array
+    {
+        $data = $response->json();
+
+        if (! is_array($data) || ! array_is_list($data)) {
+            throw new ServerException("Simply Connect returned an invalid {$itemName} list.", $response->status());
+        }
+
+        return array_map(static function (mixed $item) use ($hydrate, $itemName): mixed {
+            if (! is_array($item)) {
+                throw new \UnexpectedValueException("Simply Connect returned an invalid {$itemName} item.");
+            }
+
+            return $hydrate($item);
+        }, $data);
     }
 
     private function request(): PendingRequest

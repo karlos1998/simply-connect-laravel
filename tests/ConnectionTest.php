@@ -4,6 +4,7 @@ namespace SimplyConnect\Laravel\Tests;
 
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use SimplyConnect\Laravel\Data\OutgoingCall;
 use SimplyConnect\Laravel\Enums\MessageStatus;
 use SimplyConnect\Laravel\Exceptions\IdempotencyConflictException;
 use SimplyConnect\Laravel\Exceptions\RateLimitException;
@@ -179,5 +180,102 @@ final class ConnectionTest extends TestCase
             ->send();
 
         self::assertSame(MessageStatus::Unknown, $receipt->status);
+    }
+
+    public function test_it_lists_messages_and_call_queue_resources(): void
+    {
+        Http::fake([
+            '*/api/v1/external/messages*' => Http::response([
+                'items' => [[
+                    'id' => 'message-id',
+                    'conversationId' => 'conversation-id',
+                    'direction' => 'INBOUND',
+                    'channel' => 'SMS',
+                    'remoteAddress' => '+48500100200',
+                    'body' => 'YES',
+                    'occurredAt' => '2026-09-27T10:00:00Z',
+                    'status' => 'RECEIVED',
+                    'endpoint' => [
+                        'id' => 'endpoint-id',
+                        'name' => 'Support SIM',
+                        'phoneNumber' => '+48511929271',
+                        'enabled' => true,
+                    ],
+                ]],
+                'page' => 0,
+                'size' => 25,
+                'totalElements' => 1,
+                'totalPages' => 1,
+            ]),
+            '*/api/v1/external/call-queue/endpoints' => Http::response([[
+                'id' => 'endpoint-id',
+                'name' => 'Sales line',
+                'phoneNumber' => '+48511929272',
+                'gatewayId' => 'gateway-id',
+                'gatewayName' => 'Voice gateway',
+                'gatewayStatus' => 'ONLINE',
+            ]]),
+            '*/api/v1/external/call-queue/flows' => Http::response([[
+                'id' => 'flow-id',
+                'name' => 'Order confirmation',
+                'description' => null,
+                'publishedVersionId' => 'flow-version-id',
+                'updatedAt' => '2026-09-27T10:00:00Z',
+            ]]),
+            '*/api/v1/external/call-queue*' => Http::response([
+                'items' => [$this->callQueueItem()],
+                'page' => 0,
+                'totalElements' => 1,
+                'totalPages' => 1,
+            ]),
+        ]);
+
+        $client = $this->simplyConnect();
+
+        self::assertSame('YES', $client->messages(['query' => '+48500100200'])->items[0]->body);
+        self::assertSame('Voice gateway', $client->callQueueEndpoints()[0]->gatewayName);
+        self::assertSame('flow-version-id', $client->publishedCallFlows()[0]->publishedVersionId);
+        self::assertSame('QUEUED', $client->callQueue()->items[0]->status);
+    }
+
+    public function test_it_queues_an_outgoing_call(): void
+    {
+        Http::fake([
+            '*/api/v1/external/call-queue' => Http::response($this->callQueueItem(), 201),
+        ]);
+
+        $created = $this->simplyConnect()->queueCall(new OutgoingCall(
+            endpointId: 'endpoint-id',
+            flowVersionId: 'flow-version-id',
+            destination: '+48500100200',
+            requestId: 'order-1842-call',
+        ));
+
+        self::assertSame('queue-item-id', $created->id);
+        Http::assertSent(fn (Request $request): bool => $request['requestId'] === 'order-1842-call'
+            && $request['timeZone'] === 'Europe/Warsaw'
+            && $request['intervalSeconds'] === 30);
+    }
+
+    /** @return array<string, mixed> */
+    private function callQueueItem(): array
+    {
+        return [
+            'id' => 'queue-item-id',
+            'endpointId' => 'endpoint-id',
+            'flowVersionId' => 'flow-version-id',
+            'flowName' => 'Order confirmation',
+            'flowVersion' => 1,
+            'destination' => '+48500100200',
+            'source' => 'API',
+            'status' => 'QUEUED',
+            'notBefore' => '2026-09-27T10:00:00Z',
+            'timeZone' => 'Europe/Warsaw',
+            'intervalSeconds' => 30,
+            'createdAt' => '2026-09-27T10:00:00Z',
+            'updatedAt' => '2026-09-27T10:00:00Z',
+            'callId' => null,
+            'reason' => null,
+        ];
     }
 }
