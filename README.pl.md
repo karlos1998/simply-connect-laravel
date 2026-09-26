@@ -33,6 +33,7 @@ $receipt = SimplyConnect::sms()
 - bezpieczna idempotencja oraz jawna obsługa nieznanego wyniku;
 - osobne wyjątki dla autoryzacji, walidacji, limitów i błędów serwera;
 - pełny fake z wygodnymi asercjami testowymi;
+- opcjonalny panel deweloperski w stylu Telescope dla SMS-ów, wiadomości i kolejki połączeń;
 - brak automatycznych ponowień, które mogłyby zdublować SMS.
 
 ## Wymagania
@@ -67,6 +68,55 @@ Opublikuj konfigurację tylko wtedy, gdy potrzebujesz wielu połączeń lub nazw
 ```bash
 php artisan vendor:publish --tag=simply-connect-config
 ```
+
+## Opcjonalny panel deweloperski
+
+Pakiet zawiera domyślnie wyłączony, renderowany po stronie serwera panel pod adresem `/simply-connect`. Pokazuje zasoby
+dostępne dla skonfigurowanego klucza API, ostatnie wiadomości i kolejkę połączeń. Pozwala też wysłać testowy SMS albo
+dodać połączenie IVR do kolejki. Klucz API pozostaje na serwerze i nigdy nie jest umieszczany w HTML-u.
+
+Opublikuj konfigurację oraz provider aplikacji:
+
+```bash
+php artisan simply-connect:install
+```
+
+Następnie włącz panel w `.env`:
+
+```dotenv
+SIMPLY_CONNECT_PANEL_ENABLED=true
+# SIMPLY_CONNECT_PANEL_PATH=simply-connect
+# SIMPLY_CONNECT_PANEL_DOMAIN=
+# SIMPLY_CONNECT_PANEL_CONNECTION=default
+```
+
+Model autoryzacji celowo działa tak jak w Laravel Telescope:
+
+- w środowisku `local` panel może otworzyć każdy;
+- w każdym innym środowisku dostęp ustala Gate `viewSimplyConnect` w opublikowanym
+  `App\Providers\SimplyConnectServiceProvider`;
+- panel nie ma osobnego hasła ani formularza logowania — na produkcji używa użytkownika zalogowanego w Twojej aplikacji.
+
+Przed włączeniem panelu poza `local` uzupełnij opublikowany provider:
+
+```php
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
+
+protected function gate(): void
+{
+    Gate::define('viewSimplyConnect', fn (User $user): bool => in_array(
+        $user->email,
+        ['developer@example.com'],
+        true,
+    ));
+}
+```
+
+Domyślna reguła nie wpuszcza na produkcji nikogo. Pozostaw standardowy middleware `web` w konfiguracji panelu, aby Gate
+otrzymywał bieżącego użytkownika Laravela, a operacje POST były chronione przez CSRF. Panel sprawdza moduły niezależnie,
+więc uprawnienia `SMS_SEND`, `MESSAGES_READ`, `CALL_QUEUE_READ` i `CALL_QUEUE_WRITE` możesz przyznać tylko tam, gdzie są
+potrzebne.
 
 ## Wysyłanie SMS
 

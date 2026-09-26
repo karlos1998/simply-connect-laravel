@@ -7,6 +7,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-27
+
+### Added
+
+- Optional Telescope-style developer panel with local access and a production authorization gate.
+- Message listing, call-queue discovery, queue inspection and outgoing-call creation APIs.
+- Call-queue support in the package fake and expressive call assertions.
+
+### Changed
+
+- `simply-connect:install` now publishes configuration and an application authorization provider.
+
 ## [0.1.1] - 2026-09-25
 
 ### Changed
@@ -22,6 +34,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Laravel notification channel, named endpoints, typed responses and exceptions.
 - Test fake, endpoint discovery and message delivery-status lookup.
 
-[Unreleased]: https://github.com/karlos1998/simply-connect-laravel/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/karlos1998/simply-connect-laravel/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/karlos1998/simply-connect-laravel/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/karlos1998/simply-connect-laravel/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/karlos1998/simply-connect-laravel/releases/tag/v0.1.0

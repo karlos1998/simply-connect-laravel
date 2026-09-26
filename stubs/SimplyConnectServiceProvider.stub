@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Providers;
+
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
+use SimplyConnect\Laravel\SimplyConnectApplicationServiceProvider;
+
+class SimplyConnectServiceProvider extends SimplyConnectApplicationServiceProvider
+{
+    /**
+     * Register the gate used outside the local environment.
+     */
+    protected function gate(): void
+    {
+        Gate::define('viewSimplyConnect', function (User $user): bool {
+            return in_array($user->email, [
+                // '[email protected]',
+            ], true);
+        });
+    }
+}
+

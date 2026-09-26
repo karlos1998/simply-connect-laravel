@@ -15,4 +15,25 @@ return [
             'connect_timeout' => (int) env('SIMPLY_CONNECT_CONNECT_TIMEOUT', 3),
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Developer panel
+    |--------------------------------------------------------------------------
+    |
+    | The panel is opt-in. Its authorization follows the same model as Laravel
+    | Telescope: local is open, while other environments use the
+    | "viewSimplyConnect" gate from the published application provider.
+    |
+    */
+    'panel' => [
+        'enabled' => env('SIMPLY_CONNECT_PANEL_ENABLED', false),
+        'domain' => env('SIMPLY_CONNECT_PANEL_DOMAIN'),
+        'path' => env('SIMPLY_CONNECT_PANEL_PATH', 'simply-connect'),
+        'connection' => env('SIMPLY_CONNECT_PANEL_CONNECTION'),
+        'middleware' => [
+            'web',
+            \SimplyConnect\Laravel\Http\Middleware\Authorize::class,
+        ],
+    ],
 ];

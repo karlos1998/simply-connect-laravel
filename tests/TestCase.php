@@ -16,6 +16,7 @@ abstract class TestCase extends Orchestra
 
     protected function defineEnvironment($app): void
     {
+        $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('s', 32)));
         $app['config']->set('simply-connect.default', 'default');
         $app['config']->set('simply-connect.connections.default', [
             'base_url' => 'https://api.simply-connect.test',

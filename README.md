@@ -33,6 +33,7 @@ $receipt = SimplyConnect::sms()
 - safe idempotency keys with explicit unknown-outcome handling;
 - focused exceptions for authentication, validation, rate limits and server failures;
 - a first-class fake with expressive test assertions;
+- an optional Telescope-style developer panel for SMS, messages and the call queue;
 - no automatic retry that could accidentally duplicate an SMS.
 
 ## Requirements
@@ -67,6 +68,55 @@ Publish the configuration only when you need multiple connections or named endpo
 ```bash
 php artisan vendor:publish --tag=simply-connect-config
 ```
+
+## Optional developer panel
+
+The package includes an opt-in, server-rendered panel at `/simply-connect`. It shows the resources available to the
+configured API key, recent messages and the outgoing call queue. It can also send a test SMS or add an IVR call to the
+queue. The API key stays on the server and is never rendered into the page.
+
+Install the configuration and application provider:
+
+```bash
+php artisan simply-connect:install
+```
+
+Then enable the panel in `.env`:
+
+```dotenv
+SIMPLY_CONNECT_PANEL_ENABLED=true
+# SIMPLY_CONNECT_PANEL_PATH=simply-connect
+# SIMPLY_CONNECT_PANEL_DOMAIN=
+# SIMPLY_CONNECT_PANEL_CONNECTION=default
+```
+
+The authorization model deliberately follows Laravel Telescope:
+
+- in the `local` environment, everyone can open the panel;
+- in every other environment, the `viewSimplyConnect` gate in the published
+  `App\Providers\SimplyConnectServiceProvider` decides who may enter;
+- there is no separate panel password or login screen — production users authenticate through your application.
+
+Edit the published provider before enabling the panel outside `local`:
+
+```php
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
+
+protected function gate(): void
+{
+    Gate::define('viewSimplyConnect', fn (User $user): bool => in_array(
+        $user->email,
+        ['developer@example.com'],
+        true,
+    ));
+}
+```
+
+The default gate denies every production user. Keep the standard `web` middleware in the panel configuration so the
+gate receives your currently authenticated Laravel user and POST actions remain protected by CSRF. The dashboard loads
+each capability independently: `SMS_SEND`, `MESSAGES_READ`, `CALL_QUEUE_READ` and `CALL_QUEUE_WRITE` can be granted only
+as needed.
 
 ## Sending SMS
 
