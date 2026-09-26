@@ -1,5 +1,7 @@
 <?php
 
+use SimplyConnect\Laravel\Http\Middleware\Authorize;
+
 return [
     'default' => env('SIMPLY_CONNECT_CONNECTION', 'default'),
 
@@ -33,7 +35,7 @@ return [
         'connection' => env('SIMPLY_CONNECT_PANEL_CONNECTION'),
         'middleware' => [
             'web',
-            \SimplyConnect\Laravel\Http\Middleware\Authorize::class,
+            Authorize::class,
         ],
     ],
 ];
